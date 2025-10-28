@@ -1,4 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/rakshithjm97/java.git'
+            }
+        }
+
+        stage('Update pom.xml for Java 11+') {
+            steps {
+                // Replace old pom.xml with correct configuration
+                writeFile file: 'pom.xml', text: '''<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -39,7 +52,7 @@
 
     <build>
         <plugins>
-            <!-- ✅ Correct compiler plugin for Java 11+ -->
+            <!-- Compiler plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -49,7 +62,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Optional Jetty runner -->
+            <!-- Jetty runner (optional) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -74,4 +87,26 @@
         </plugins>
     </build>
 
-</project>
+</project>'''
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                sh 'sudo cp target/*.war /opt/apache-tomcat-9.0.64/webapps/'
+            }
+        }
+
+        stage('Start Tomcat') {
+            steps {
+                sh 'sudo sh /opt/apache-tomcat-9.0.64/bin/startup.sh'
+            }
+        }
+    }
+}
